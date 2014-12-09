@@ -1,0 +1,13 @@
+[influxdb_cluster]
+influxdb1 ansible_ssh_host=10.0.0.10 ansible_ssh_user=root
+influxdb2 ansible_ssh_host=10.0.0.11 ansible_ssh_user=root
+influxdb3 ansible_ssh_host=10.0.0.12 ansible_ssh_user=root
+
+[influxdb_benchmark]
+influx-bench ansible_ssh_host=10.0.0.15 ansible_ssh_user=root
+
+[influxdb:children]
+influxdb_cluster
+influxdb_benchmark
+
+[localhost]

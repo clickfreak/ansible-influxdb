@@ -1,0 +1,74 @@
+---
+
+- name: Add nginx apt key
+  when: ansible_os_family == "Debian"
+  apt_key:
+    url: http://nginx.org/keys/nginx_signing.key
+    state: present
+
+- name: Add official nginx apt repo
+  when: ansible_distribution == 'Ubuntu'
+  apt_repository:
+    repo: "deb http://nginx.org/packages/ubuntu/ {{ ansible_lsb.codename }} nginx"
+    state: present
+
+- name: Install latest nginx
+  when: ansible_os_family == "Debian"
+  apt: 
+    pkg: nginx
+    state: latest
+    update_cache: yes
+    cache_valid_time: 180
+
+- name: Ensure what dir for ssl certs exists
+  file:
+    path: /etc/nginx/ssl
+    state: directory
+    mode: 0600
+    owner: root
+    group: root
+
+- name: Generate SSL self-signed cert
+  command: "openssl req -subj '/CN={{ ansible_fqdn }}/O=My Company Name LTD./C=RU' -new -newkey rsa:2048 -days 365 -nodes -x509 -keyout /etc/nginx/ssl/server.key -out /etc/nginx/ssl/server.crt creates=/etc/nginx/ssl/server.crt"
+
+- name: Check permissions on ssl cert
+  file:
+    path: "{{ item }}"
+    state: file
+    mode: 0400
+    owner: root
+    group: root
+  with_items:
+    - /etc/nginx/ssl/server.key
+    - /etc/nginx/ssl/server.crt
+
+- name: Remove original example_ssl.conf
+  file:
+    path: /etc/nginx/conf.d/example_ssl.conf
+    state: absent
+
+- name: Upload global config
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart nginx
+
+- name: Upload default site config 
+  template:
+    src: nginx_default.conf.j2
+    dest: /etc/nginx/conf.d/default.conf
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart nginx
+
+- include: sites.yml
+  when: nginx_sites_list is defined
+
+- name: Check what nginx is working
+  service:
+    name: nginx
+    state: started

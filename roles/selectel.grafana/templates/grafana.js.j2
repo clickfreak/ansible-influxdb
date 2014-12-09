@@ -1,0 +1,50 @@
+// == Configuration
+// config.js is where you will find the core Grafana configuration. This file contains parameter that
+// must be set before Grafana is run for the first time.
+
+define(['settings'], function(Settings) {
+  "use strict";
+
+  return new Settings(
+/* --------------- begin json config block --------------*/
+
+    {
+      datasources: {
+        influxdb: {
+          type: 'influxdb',
+          url: '{{ grafana_config.datasources.influxdb.url }}',
+          username: '{{ grafana_config.datasources.influxdb.username }}',
+          password: '{{ grafana_config.datasources.influxdb.password }}',
+        },
+        grafana: {
+          type: 'influxdb',
+          url: '{{ grafana_config.datasources.grafana.url }}',
+          username: '{{ grafana_config.datasources.grafana.username }}',
+          password: '{{ grafana_config.datasources.grafana.password }}',
+          grafanaDB: true
+        },
+      },
+      search: {
+        max_results: 100
+      },
+      default_route: '/dashboard/file/default.json',
+      unsaved_changes_warning: true,
+      playlist_timespan: "1m",
+      admin: {
+        password: ''
+      },
+      window_title_prefix: 'Grafana - ',
+      plugins: {
+        panels: [],
+        dependencies: [],
+      }
+    }
+
+/* sorry, but this will not work :(
+{{ final_grafana_config|to_nice_json }}*/
+/* --------------- end json config block --------------*/
+    );
+});
+
+
+

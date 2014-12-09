@@ -1,0 +1,122 @@
+---
+# defaults file for selectel.influxdb
+
+influxdb_config: {}
+
+influxdb_version: latest # 0.8.7
+basic_influxdb_config:
+  hostname: "{{ ansible_default_ipv4.address }}"
+  bind-address: 0.0.0.0
+  reporting-disabled: false
+  logging:
+    level: error # logging level can be one of "debug", "info", "warn" or "error"
+    file: /opt/influxdb/shared/log.txt
+  admin:
+    port: 8083 # binding is disabled if the port isn't set
+    assets: /opt/influxdb/current/admin
+  api:
+    port: 8086
+    read-timeout: "5s"
+  input_plugins:
+    graphite: # Configure the graphite api
+      enabled: false
+      # port: 2003
+      # database: ""  # store graphite data in this database
+      # udp_enabled: true # enable udp interface on the same port as the tcp interface
+    udp: # Configure the udp api
+      enabled: false
+      # port: 4444
+      # database: "testdb"
+  raft:
+    port: 8090
+    dir: /opt/influxdb/shared/data/raft
+  storage:
+    dir: /opt/influxdb/shared/data/db
+    write-buffer-size: 10000
+  cluster:
+    protobuf_port: 8099
+    protobuf_timeout: "2s" # the write timeout on the protobuf conn any duration parseable by time.ParseDuration
+    protobuf_heartbeat: "200ms" # the heartbeat interval between the servers. must be parseable by time.ParseDuration
+    protobuf_min_backoff: "1s" # the minimum backoff after a failed heartbeat attempt
+    protobuf_max_backoff: "10s" # the maxmimum backoff after a failed heartbeat attempt
+    write-buffer-size: 10000
+    max-response-buffer-size: 100
+    concurrent-shard-query-limit: 10
+    # seed-servers: "{{ {} }}"
+  leveldb:
+    max-open-files: 40
+    lru-cache-size: "200m"
+    max-open-shards: 0
+    point-batch-size: 100
+    write-batch-size: 5000000
+  sharding:
+    replication-factor: 1
+    short-term:
+      duration: "7d"
+      split: 1
+    long-term:
+      duration: "30d"
+      split: 1
+  wal:
+    dir: "/opt/influxdb/shared/data/wal"
+    flush-after: 1000 # the number of writes after which wal will be flushed, 0 for flushing on every write
+    bookmark-after: 1000 # the number of writes after which a bookmark will be created
+    index-after: 1000
+    requests-per-logfile: 10000
+
+
+# defaults file for selectel.influxdb benchmark
+
+basic_influxdb_benchmark_config:
+  log_file: benchmark.log
+  stats_server:
+    connection_string: localhost:8086
+    database: reports
+    is_secure: false
+    user: root
+    password: root
+    skip_verify: false
+    timeout: 10s
+  load_settings:
+    concurrent_connections: 50
+    runs_per_load_definition: 10000
+  output_after_count: 10000
+  servers:
+    - connection_string: localhost:8086
+      is_secure: false
+      skip_verify: false
+      timeout: 10s
+  cluster_credentials:
+    database: benchmark
+    password: root
+    user: root
+  load_definitions:
+    - base_series_name: some_series
+      bool_columns:
+        - name: some_bool
+      float_columns:
+        - name: some_other_val
+      int_columns:
+        - name: value
+          max_value: 10
+      name: write_10_series
+      queries:
+        - name: count
+          perform_every: 10s
+          query_end: ' where time > now() - 30s'
+          query_start: 'select count(value) from '
+        - full_query: select * from /.*/ limit 1
+          name: select_last_point_from_all
+          perform_every: 5s
+      series_count: 100
+      string_columns:
+        - name: type
+          values:
+            - click
+            - open
+            - view
+            - delete
+      write_settings:
+        batch_points_size: 100
+        batch_series_size: 10
+        delay_between_posts: 0s

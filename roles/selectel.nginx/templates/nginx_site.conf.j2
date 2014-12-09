@@ -1,0 +1,32 @@
+# {{ ansible_managed }}
+
+server {
+    listen       443 ssl;
+{% if item.server_name != "default" %}
+    server_name  {{ item.server_name }};
+{% endif %}
+
+    ssl_certificate      /etc/nginx/ssl/{{ item.server_name }}.crt;
+    ssl_certificate_key  /etc/nginx/ssl/{{ item.server_name }}.key;
+
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+
+    include /etc/nginx/conf.d/{{ item.server_name }}/*.conf;
+
+{% for location in item.locations %}
+    location {{ location.location }} {
+    {% for z in location.rules %}
+        {{ z.keys()[0] }}   {{ z[z.keys()[0]] }};
+    {% endfor %}
+    }
+{% endfor %}
+}
+
+server {
+        listen 80;
+        server_name  {{ item.server_name }};
+        rewrite ^(.*) https://$host$1 permanent;
+}

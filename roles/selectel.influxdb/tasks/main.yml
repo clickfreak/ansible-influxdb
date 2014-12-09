@@ -1,0 +1,48 @@
+---
+# tasks file for selectel.influxdb
+
+- name: Fetch package influxdb deb-package
+  get_url:
+    url: http://s3.amazonaws.com/influxdb/influxdb_{{ influxdb_version }}_amd64.deb
+    dest: /tmp/influxdb_{{ influxdb_version }}_amd64.deb
+
+- name: create shared dir for influxdb before install deb packet (it need for init cluster in first start)
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - /opt/influxdb/shared
+
+- name: make config for influxdb
+  template:
+    src: config.toml.j2
+    dest: /opt/influxdb/shared/config.toml
+    backup: yes
+  register: make_config
+
+- name: Install package influxdb deb-package
+  apt:
+    deb: "/tmp/influxdb_{{ influxdb_version }}_amd64.deb"
+
+- name: make config for benchmark
+  when: influxdb_benchmark_config is defined
+  template:
+    src: benchmark_config.toml.j2
+    dest: /opt/influxdb/shared/benchmark_config.toml
+    owner: influxdb
+    group: influxdb
+    mode: 0640
+    backup: yes
+  tags:
+    - yaml_config
+
+- name: Restart influx db if config changed
+  when: make_config|changed
+  service:
+    name: influxdb
+    state: restarted
+
+- name: Ensure what influxdb service is running
+  service:
+    name: influxdb
+    state: started

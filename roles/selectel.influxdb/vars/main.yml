@@ -1,0 +1,8 @@
+---
+# vars file for selectel.influxdb
+
+# final_influxdb_config: "{{ basic_influxdb_config.update(influxdb_config) }}{{ basic_influxdb_config }}"
+final_influxdb_config: "{{ basic_influxdb_config|merge_hash(influxdb_config) }}"
+final_influxdb_benchmark_config: "{{ basic_influxdb_benchmark_config|merge_hash(influxdb_benchmark_config) }}"
+empty_seeds:
+  seed-servers: []

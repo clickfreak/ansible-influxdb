@@ -1,0 +1,31 @@
+---
+
+- name: download grafana from official site.
+  get_url:
+    url: http://grafanarel.s3.amazonaws.com/grafana-{{ grafana_version }}.tar.gz
+    dest: /tmp/grafana-{{ grafana_version }}.tar.gz
+
+- name: mkdir of grafana
+  file:
+    state: directory
+    path: /opt/grafana
+
+- name: unarchive of grafana
+  unarchive:
+    src: /tmp/grafana-{{ grafana_version }}.tar.gz
+    dest: /opt/grafana
+    copy: no
+
+- name: create symlink
+  file:
+    src: /opt/grafana/grafana-{{ grafana_version }}
+    dest: /opt/grafana/current
+    state: link
+
+- name: make grafana config
+  template:
+    src: grafana.js.j2
+    dest: /opt/grafana/current/config.js 
+    mode: 0644
+    backup: yes
+  notify: restart nginx

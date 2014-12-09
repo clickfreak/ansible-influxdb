@@ -1,0 +1,24 @@
+---
+
+nginx_user: www-data
+nginx_group: www-data
+nginx_worker_processes: 4
+nginx_global_params:
+  - sendfile: "on"
+  - tcp_nopush: "on"
+  - keepalive_timeout: 65
+  - gzip: "on"
+
+nginx_sites_list:
+  - server_name: default
+    state: present
+    cert:
+      CN: "{{ ansible_fqdn }}"
+      O: "Company Ltd."
+      C: "RU"
+      days: 365
+    locations:
+      - location: "/"
+        rules:
+          - root: "/usr/share/nginx/html"
+          - index: "index.html index.htm"

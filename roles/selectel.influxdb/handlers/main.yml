@@ -1,0 +1,7 @@
+---
+# handlers file for selectel.influxdb
+
+- name: restart influxdb
+  service:
+    name: influxdb
+    state: restarted

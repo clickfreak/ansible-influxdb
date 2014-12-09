@@ -1,0 +1,23 @@
+# {{ ansible_managed }}
+
+server {
+    listen       443 ssl;
+
+    ssl_certificate      /etc/nginx/ssl/server.crt;
+    ssl_certificate_key  /etc/nginx/ssl/server.key;
+
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+    }
+}
+
+server {
+        listen 80;
+        rewrite ^(.*) https://$host$1 permanent;
+}

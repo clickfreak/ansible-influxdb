@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  author: Novakovsky Konstantin
+  description: 
+  company: Selectel Ltd
+  Some suggested licenses:
+  - MIT
+  license: license (GPLv2, CC-BY, etc)
+  min_ansible_version: 1.7
+  platforms:
+  - name: Ubuntu
+    versions:
+    - precise
+    - trusty
+  - name: Debian
+    versions:
+    - wheezy
+  categories:
+  - database
+  - database:nosql

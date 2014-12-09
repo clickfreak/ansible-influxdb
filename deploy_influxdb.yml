@@ -1,0 +1,126 @@
+
+
+- name: install and configure influxdb cluster
+  user: root
+  hosts:
+    - influxdb_cluster
+    - influxdb_benchmark
+
+  tasks:
+    - name: install dependencies
+      apt:
+        name: "{{ item }}"
+        state: latest
+        update_cache: yes
+        cache_valid_time: 600
+      with_items:
+        - python-software-properties
+        - python-pycurl
+
+- name: install and configure influxdb cluster
+  user: root
+  hosts: influxdb_cluster
+
+  roles:
+    - role: selectel.influxdb
+      influxdb_cluster_group: influxdb_cluster
+      influxdb_config:
+        logging:
+          level: warn
+        cluster:
+          seed-servers: 
+            - "{{ hostvars[groups[influxdb_cluster_group][0]]['ansible_default_ipv4']['address'] }}:8090"
+
+  post_tasks:
+    # use shell module instead of uri because https://github.com/ansible/ansible-modules-core/issues/265
+    - name: Create benchmark db
+      shell: "curl -X POST 'http://{{ ansible_ssh_host }}:8086/db?u=root&p=root' -d '{\"name\": \"benchmark\"}'"
+      when: inventory_hostname == groups['influxdb_cluster'][0]
+      register: create_db
+      connection: local
+      changed_when: '" exists" not in create_db.stdout'
+
+- name: install and configure influxdb benchmark host
+  user: root
+  hosts: influxdb_benchmark
+
+  roles:
+    - role: selectel.influxdb
+      influxdb_config:
+        logging:
+          level: warn
+
+      influxdb_benchmark_config: # if this not defined, then benchmark config generation will be skipped
+        log_file: benchmark.log
+        servers:
+          - connection_string: "{{ hostvars[groups['influxdb_cluster'][0]]['ansible_default_ipv4']['address'] }}:8086"
+            is_secure: false
+            skip_verify: false
+            timeout: 15s
+        cluster_credentials:
+          database: benchmark
+          user: root
+          password: root
+        stats_server:
+          connection_string: "localhost:8086"
+          database: bench_stat
+          user: root
+          password: root
+          is_secure: false
+          skip_verify: false
+          timeout: 10s
+
+  post_tasks:
+    # use shell module instead of uri because https://github.com/ansible/ansible-modules-core/issues/265
+    - name: Create bench_stat db
+      shell: "curl -X POST 'http://{{ ansible_ssh_host }}:8086/db?u=root&p=root' -d '{\"name\": \"bench_stat\"}'"
+      when: inventory_hostname == groups['influxdb_benchmark'][0]
+      register: create_db
+      connection: local
+      changed_when: '" exists" not in create_db.stdout'
+
+    - name: Create grafana db
+      shell: "curl -X POST 'http://{{ ansible_ssh_host }}:8086/db?u=root&p=root' -d '{\"name\": \"grafana\"}'"
+      when: inventory_hostname == groups['influxdb_benchmark'][0]
+      register: create_db
+      connection: local
+      changed_when: '" exists" not in create_db.stdout'
+
+- name: install and configure influxdb benchmark host
+  user: root
+  hosts: influxdb_benchmark
+
+  roles:
+    - role: selectel.grafana
+      grafana_version: 1.9.0
+      grafana_config:
+        datasources:
+          influxdb:
+            type: influxdb
+            url: "https://{{ ansible_ssh_host }}/grafana/influxdb/db/bench_stat"
+            username: root
+            password: root
+          grafana:
+            type: influxdb
+            url: "https://{{ ansible_ssh_host }}/grafana/influxdb/db/grafana/"
+            username: root
+            password: root
+            grafanaDB: true
+    - role: selectel.nginx
+      nginx_sites_list:
+        - server_name: default
+          state: present
+          cert:
+            CN: "{{ ansible_fqdn }}"
+            O: "Company Ltd."
+            C: "RU"
+            days: 365
+
+          locations:
+            - location: "/grafana"
+              rules:
+                - alias: "/opt/grafana/current"
+                - index: "index.html"
+            - location: "/grafana/influxdb/"
+              rules:
+                - proxy_pass: "http://{{ ansible_ssh_host }}:8086/"

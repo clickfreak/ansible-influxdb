@@ -1,0 +1,25 @@
+- name: "create base config for site {{ item.server_name }}"
+  when: nginx_sites_list is defined
+  with_items: nginx_sites_list
+  template:
+    src: nginx_site.conf.j2
+    dest: "/etc/nginx/conf.d/{{ item.server_name }}.conf"
+    owner: root
+    group: root
+    mode: 0600
+  notify: restart nginx
+
+- name: "create config dir for site {{ item.server_name }}"
+  when: nginx_sites_list is defined
+  with_items: nginx_sites_list
+  file:
+    path: "/etc/nginx/conf.d/{{ item.server_name }}"
+    state: directory
+    mode: 0600
+    owner: root
+    group: root
+
+- name: Generate SSL self-signed cert
+  when: nginx_sites_list is defined
+  with_items: nginx_sites_list
+  command: "openssl req -subj '/CN={{ item.cert.CN }}/O={{ item.cert.O }}/C={{ item.cert.C }}' -new -newkey rsa:2048 -days {{ item.cert.days }} -nodes -x509 -keyout /etc/nginx/ssl/{{ item.server_name }}.key -out /etc/nginx/ssl/{{ item.server_name }}.crt creates=/etc/nginx/ssl/{{ item.server_name }}.crt"

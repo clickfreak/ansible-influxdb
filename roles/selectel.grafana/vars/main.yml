@@ -1,0 +1,3 @@
+---
+
+final_grafana_config: "{{ default_grafana_config|merge_hash(grafana_config) }}"

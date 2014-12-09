@@ -1,0 +1,13 @@
+#jinja2: lstrip_blocks: True
+# {{ ansible_managed }}
+
+{% if influxdb_cluster_group is defined %}
+{% set seedserver = groups[influxdb_cluster_group][0] %}
+# seedserver = {{ seedserver }}
+# inventory_hostname = {{ inventory_hostname }}
+{% if seedserver == inventory_hostname %}
+# Connect to seed servers {{ final_influxdb_config['cluster'].update(empty_seeds) }}
+# i'm master
+{% endif %}
+{% endif %}
+{{ final_influxdb_config|to_toml }}

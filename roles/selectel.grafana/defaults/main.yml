@@ -1,0 +1,30 @@
+---
+
+grafana_version: 1.9.0
+
+default_grafana_config:
+  datasources:
+    influxdb:
+      type: influxdb
+      url: "http://{{ ansible_fqdn }}:8086/db/database_name"
+      username: admin
+      password: admin
+    grafana:
+      type: influxdb
+      url: "http://{{ ansible_fqdn }}:8086/db/grafana"
+      username: admin
+      password: admin
+      grafanaDB: true
+  search:
+    max_results: 100
+  default_route: "/dashboard/file/default.json"
+  unsaved_changes_warning: true
+  playlist_timespan: "1m"
+  admin:
+    password: ""
+  window_title_prefix: "Grafana - "
+  plugins:
+    panels: []
+    dependencies: []
+
+grafana_config: {}

@@ -1,0 +1,4 @@
+#jinja2: lstrip_blocks: True
+# {{ ansible_managed }}
+
+{{ final_influxdb_benchmark_config|to_toml }}
